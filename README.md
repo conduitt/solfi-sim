@@ -58,7 +58,7 @@ One-leg sims:
 ./target/release/solfi-sim simulate --direction sol-to-usdc --amount 10
 ```
 
-Round-trip spreads (pretty print):
+Round-trip spreads (print):
 ```
 ./target/release/solfi-sim spreads 100.0
 ```
@@ -89,7 +89,7 @@ Fetch snapshot for a specific market:
   --market-token-base  <BASE_VAULT>
 ```
 
-Round-trip spread (pretty print):
+Round-trip spread (print):
 ```
 ./target/release/solfi-sim spreads 100.0 \
   --market <MARKET_PUBKEY> \
