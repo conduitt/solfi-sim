@@ -1,100 +1,190 @@
-## SolFi Simulator
+# SolFi Simulator
 
-We were curious how [SolFi](https://solscan.io/account/SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe) worked, so I built
-a very simple simulator.
+Local Solana simulator for SolFi markets using [LiteSVM](https://github.com/LiteSVM/litesvm).
 
-`solfi-sim` uses [LiteSVM](https://github.com/LiteSVM/litesvm) to run transactions against 4 WSOL/USDC pairs locally and
-in-memory. I've included the state of those accounts at slot `333456106` and this simulator also includes a way to
-re-fetch
+Runs **deterministic** WSOL/USDC sims across the canonical SolFi pools and—new in this fork—**single-market sims** for *any* SolFi market (e.g., FART/USDC, PENGU/USDC, ETH/USDC), including **Token-2022** vaults.
 
-Why not just run simulations against an RPC node? You could but if you want to understand the full curve you'll need to
-make hundreds of requests. It's more efficient and fun to play around with the states locally, and this is a good
-starting point. And more importantly, if you run against an RPC node, you can't guarantee that your requests will all run against the same slot.
-These SolFi pools appear to update every slot, and running against the fetched state in a local SVM provides better simulation guarantees there.
+[![Forked from](https://img.shields.io/badge/forked_from-upstream-blue.svg)](https://github.com/tryghostxyz/solfi-sim)
 
-### Build
+---
 
-```shell
+## Origin & Attribution
+
+Forked from the original WSOL/USDC simulator by **tryghostxyz**:  
+Upstream: https://github.com/tryghostxyz/solfi-sim
+
+We extended it to support **arbitrary SolFi markets**, **Token-2022**, **auto safe-slot**, and **CSV sweeps**, while keeping the original flow.
+
+---
+
+## What’s in this fork
+
+- **Single-market simulator (any SolFi market)** — pass market pubkey + its two vaults (QUOTE=USDC, BASE=asset).
+- **Token-2022 support** — auto-detects token program from vault owner.
+- **Auto safe-slot warp** — avoids cutoff rejections (multi-pool: min generated across 4 pools; single-market: that market’s generated slot).
+- **No ATA CPI in SVM** — user ATAs created directly; native WSOL + `sync_native`.
+- **Generic swap IX** — explicit vaults/mints + dynamic token program id.
+- **CSV output + size sweeps** — `spreads --sizes ... --csv file.csv` for curve plotting.
+
+---
+
+## Build
+
+```bash
 cargo build --release
-```
+Optional .env:
 
-### Usage
-
-```shell
+env
+Copy code
+RPC_URL=https://api.mainnet-beta.solana.com
+CLI
+sql
+Copy code
 ./target/release/solfi-sim
 Usage: solfi-sim <COMMAND>
 
 Commands:
-  fetch-accounts  Fetch the solfi wsol/usdc pool accounts and related data
-  cutoffs         Print slot cutoff and other metadata from fetched solfi pool data
-  simulate        Simulate a WSOL -> USDC swap in all the solfi wsol/usdc pools
-  help            Print this message or the help of the given subcommand(s)
+  fetch-accounts  Fetch pool accounts + related data (multi-pool WSOL/USDC or a single market)
+  cutoffs         Print slot cutoff and other metadata from fetched pool data
+  spreads         Calculate bid/ask spreads (supports --sizes and --csv)
+  simulate        Simulate a single-leg swap across WSOL/USDC pools (legacy path)
+  help            Print help
+A) Multi-pool WSOL/USDC
+Fetch snapshot (canonical 4 pools):
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-```
-
-Check the locally persisted account states against which we run our sims
-
-```shell
-$ ./target/release/solfi-sim cutoffs
-== fetched between slots 333456106 and 333456107 ==
-5guD4Uz462GT4Y4gEuqyGsHZ59JGxFN4a3rF6KWguMcJ cutoff slot=333456306, generated slot=333456106
-DH4xmaWDnTzKXehVaPSNy9tMKJxnYL5Mo5U3oTHFtNYJ cutoff slot=333456306, generated slot=333456106
-AHhiY6GAKfBkvseQDQbBC7qp3fTRNpyZccuEdYSdPFEf cutoff slot=333456306, generated slot=333456106
-CAPhoEse9xEH95XmdnJjYrZdNCA8xfUWdy3aWymHa1Vj cutoff slot=333456306, generated slot=333456106
-```
-
-Simulate a swap of 10 SOL -> USDC
-
-```shell
-$ ./target/release/solfi-sim simulate --amount 10
-5guD4Uz462GT4Y4gEuqyGsHZ59JGxFN4a3rF6KWguMcJ,10.0,1296.914489,
-DH4xmaWDnTzKXehVaPSNy9tMKJxnYL5Mo5U3oTHFtNYJ,10.0,1296.876372,
-AHhiY6GAKfBkvseQDQbBC7qp3fTRNpyZccuEdYSdPFEf,10.0,1296.753182,
-CAPhoEse9xEH95XmdnJjYrZdNCA8xfUWdy3aWymHa1Vj,10.0,1296.7628789999999,
-```
-
-You can also simulate across a range of liquidity:
-
-```shell
-seq 10 10 10000 | xargs -P 8 -I {} ./target/release/solfi-sim simulate --ignore-errors --amount {} > data_333456106.csv 
-```
-
-You can use your favorite charting tool to plot the curves. Here's an example:
-
-![pool states](./static/curves_333436948.png)
-
-You can fetch the latest account states from the chain:
-
-```shell
-cp .env.sample .env
-## OPTIONALLY ADD A SOLANA RPC ENDPOINT to your .env
-
+bash
+Copy code
 ./target/release/solfi-sim fetch-accounts
+Show cutoffs:
+
+bash
+Copy code
 ./target/release/solfi-sim cutoffs
-```
+One-leg sims:
 
-Simulate a swap in the other direction (USDC -> SOL)
+bash
+Copy code
+./target/release/solfi-sim simulate --direction usdc-to-sol --amount 1000
+./target/release/solfi-sim simulate --direction sol-to-usdc --amount 10
+Round-trip spreads (pretty print):
 
-```shell
-./target/release/solfi-sim simulate -a 14600 --direction usdc-to-sol
-```
+bash
+Copy code
+./target/release/solfi-sim spreads 100.0
+CSV sweep (multi-pool)
+bash
+Copy code
+./target/release/solfi-sim spreads 100 \
+  --sizes 10,25,50,100,250,500,1000 \
+  --csv curves_wsol_usdc.csv
+B) Single-market (any SolFi market)
+You need:
 
-Calculate spreads
+Market pubkey (SolFi market account)
 
-```shell
- ./target/release/solfi-sim spreads 100
-```
+QUOTE vault = USDC token account owned by the market
 
-## Disclaimer
+BASE vault = asset token account owned by the market
 
-*This code is being provided as is. No guarantee, representation or warranty is being made, express or implied, as to
-the safety or correctness of the code. It has not been audited and as such there can be no assurance it will work as
-intended, and users may experience delays, failures, errors, omissions or loss of transmitted information. Nothing in
-this repo should be construed as investment advice or legal advice for any particular facts or circumstances and is not
-meant to replace competent counsel. It is strongly advised for you to contact a reputable attorney in your jurisdiction
-for any questions or concerns with respect thereto. Author is not liable for any use of the foregoing, and users should
-proceed with caution and use at their own risk.*
+Tips:
 
+Markets: https://solscan.io/labelcloud/solfi#accounts
+
+Vaults: open the market → “Overview” → copy the two token accounts owned by the market; the one with USDC mint is QUOTE.
+
+Fetch snapshot for a specific market:
+
+bash
+Copy code
+./target/release/solfi-sim fetch-accounts \
+  --market <MARKET_PUBKEY> \
+  --market-token-quote <USDC_VAULT> \
+  --market-token-base  <BASE_VAULT>
+Round-trip spread (pretty print):
+
+bash
+Copy code
+./target/release/solfi-sim spreads 100.0 \
+  --market <MARKET_PUBKEY> \
+  --market-token-quote <USDC_VAULT> \
+  --market-token-base  <BASE_VAULT>
+CSV sweep (single-market)
+bash
+Copy code
+./target/release/solfi-sim spreads 100 \
+  --sizes 10,50,100,250,500,1000 \
+  --csv curves_single_market.csv \
+  --market <MARKET_PUBKEY> \
+  --market-token-quote <USDC_VAULT> \
+  --market-token-base  <BASE_VAULT>
+CSV schema
+
+Copy code
+amount_usdc,market,buy_price,sell_price,spread_usd,spread_bps
+Single-market Examples
+FART/USDC
+bash
+Copy code
+# Fetch snapshot
+./target/release/solfi-sim fetch-accounts \
+  --market FeLULW5RCKDT2NuThu4vrAQ8BjH5YbU2Y7GbiZXYohm8 \
+  --market-token-quote 81zFSjrz9tDu9ixkKToGDGhiX7Q18T8jG6DiwZVXrt3u \
+  --market-token-base  8tpF5NrzaWYU1RjbtjuToMWMRebgqGfiMRYRf46ih9Rc
+
+# Pretty print
+./target/release/solfi-sim spreads 1000.0 \
+  --market FeLULW5RCKDT2NuThu4vrAQ8BjH5YbU2Y7GbiZXYohm8 \
+  --market-token-quote 81zFSjrz9tDu9ixkKToGDGhiX7Q18T8jG6DiwZVXrt3u \
+  --market-token-base  8tpF5NrzaWYU1RjbtjuToMWMRebgqGfiMRYRf46ih9Rc
+
+# CSV sweep
+./target/release/solfi-sim spreads 100 \
+  --sizes 10,50,100,250,500,1000 \
+  --csv curves_fart_usdc.csv \
+  --market FeLULW5RCKDT2NuThu4vrAQ8BjH5YbU2Y7GbiZXYohm8 \
+  --market-token-quote 81zFSjrz9tDu9ixkKToGDGhiX7Q18T8jG6DiwZVXrt3u \
+  --market-token-base  8tpF5NrzaWYU1RjbtjuToMWMRebgqGfiMRYRf46ih9Rc
+PENGU/USDC
+bash
+Copy code
+# Fetch snapshot
+./target/release/solfi-sim fetch-accounts \
+  --market 8LbNkQgvJHkGsF6poBTRzxi3TNEFE7xHzfwQKjMWNLko \
+  --market-token-quote EBgjCinutbhu2JP83vm8yP3m51zxMLgkdUZBib78XmvL \
+  --market-token-base  6tjb7iHPNANWSygn7jHkjJEa9AR4wa6pwnXzNNc66Xi8
+
+# Pretty print
+./target/release/solfi-sim spreads 100.0 \
+  --market 8LbNkQgvJHkGsF6poBTRzxi3TNEFE7xHzfwQKjMWNLko \
+  --market-token-quote EBgjCinutbhu2JP83vm8yP3m51zxMLgkdUZBib78XmvL \
+  --market-token-base  6tjb7iHPNANWSygn7jHkjJEa9AR4wa6pwnXzNNc66Xi8
+
+# CSV sweep
+./target/release/solfi-sim spreads 100 \
+  --sizes 10,50,100,250,500,1000 \
+  --csv curves_pengu_usdc.csv \
+  --market 8LbNkQgvJHkGsF6poBTRzxi3TNEFE7xHzfwQKjMWNLko \
+  --market-token-quote EBgjCinutbhu2JP83vm8yP3m51zxMLgkdUZBib78XmvL \
+  --market-token-base  6tjb7iHPNANWSygn7jHkjJEa9AR4wa6pwnXzNNc66Xi8
+Slot handling
+Multi-pool: auto-warps to the minimum generated slot across the WSOL/USDC markets.
+
+Single-market: auto-warps to that market’s saved generated slot.
+
+No need to pass --slot in normal use.
+
+Troubleshooting (quick)
+custom program error 0x4 on buy leg → vaults likely swapped; QUOTE must be USDC.
+
+“Invalid account owner” / ATA issues → update to the latest build (we pre-create ATAs and wrap SOL via sync_native).
+
+0x10 / 0x12 / 0x17 → sim past cutoff; refetch and rely on auto safe-slot.
+
+How it works (brief)
+Executes SolFi program (data/solfi.so) in LiteSVM against a saved snapshot.
+
+Detects SPL vs Token-2022 from the owner of the vault accounts.
+
+Creates user token accounts locally; supports native WSOL + sync_native.
+
+Reads generated slot(s) at offset 464 from the market account and warps SVM.

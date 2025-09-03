@@ -1,7 +1,7 @@
 [package]
 name = "solfi-sim"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 ## solana
@@ -17,6 +17,7 @@ solana-system-interface = "1.0.0"
 spl-associated-token-account = "6.0.0"
 spl-token = "8.0.0"
 litesvm = "0.6.1"
+spl-token-2022 = "6"  
 
 ## misc
 tokio = { version = "1.44.2", features = ["full"] }

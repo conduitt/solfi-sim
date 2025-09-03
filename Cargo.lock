@@ -4978,6 +4978,7 @@ dependencies = [
  "solana-transaction",
  "spl-associated-token-account",
  "spl-token 8.0.0",
+ "spl-token-2022",
  "tokio",
  "tracing",
  "tracing-subscriber",

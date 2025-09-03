@@ -1,3 +1,22 @@
-/target
-.idea
+# Rust build
+/target/
+/**/*.rs.bk
+
 .env
+.DS_Store
+
+# Generated data/snapshots & curves
+data/account_*.json
+data/metadata.json
+curves_*.csv
+*.csv
+
+# Binaries
+/solfi-sim
+*.so
+*.dylib
+*.dll
+
+# IDE
+.vscode/
+.idea/

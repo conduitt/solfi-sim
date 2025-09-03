@@ -1,35 +1,43 @@
 use crate::swap::SwapDirection;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Fetch the solfi wsol/usdc pool accounts and related data
-    FetchAccounts,
-
-    /// Print slot cutoff and other metadata from fetched solfi pool data
-    Cutoffs,
-
-    /// Simulate spreads
-    Spreads {
-        /// Amount of USDC to base spreads off of
-        starting_usdc: f64,
+    FetchAccounts {
+        #[arg(long)]
+        market: Option<String>,
+        #[arg(long = "market-token-quote")]
+        market_token_quote: Option<String>,
+        #[arg(long = "market-token-base")]
+        market_token_base: Option<String>,
     },
 
-    /// Simulate a swap in all the solfi wsol/usdc pools
+    Cutoffs,
+
+    Spreads {
+        starting_usdc: f64,
+        #[arg(long, value_delimiter = ',', value_parser = clap::value_parser!(f64))]
+        sizes: Option<Vec<f64>>,
+        #[arg(long)]
+        csv: Option<PathBuf>,
+        #[arg(long)]
+        market: Option<String>,
+        #[arg(long = "market-token-quote")]
+        market_token_quote: Option<String>,
+        #[arg(long = "market-token-base")]
+        market_token_base: Option<String>,
+        #[arg(long)]
+        slot: Option<u64>,
+    },
+
     Simulate {
-        /// Amount of SOL or USDC to swap. Input mint depends on --direction
         #[arg(short, long)]
         amount: Option<f64>,
-
-        /// The direction of the swap
         #[arg(short, long, default_value_t = SwapDirection::SolToUsdc)]
         direction: SwapDirection,
-
-        /// Slot to simulate at (default: uses metadata.json)
         #[arg(short, long)]
         slot: Option<u64>,
-
-        /// Don't print simulation errors
         #[arg(long)]
         ignore_errors: bool,
     },
