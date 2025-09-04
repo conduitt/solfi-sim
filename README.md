@@ -2,18 +2,9 @@
 
 Local Solana simulator for SolFi markets using [LiteSVM](https://github.com/LiteSVM/litesvm).
 
-Runs **deterministic** WSOL/USDC sims across the canonical SolFi pools and—new in this fork—**single-market sims** for *any* SolFi market (e.g., FART/USDC, PENGU/USDC, ETH/USDC).
+Runs deterministic WSOL/USDC sims across the canonical SolFi pools and—new in this fork—**single-market sims** for *any* SolFi market (e.g., FART/USDC, PENGU/USDC, ETH/USDC).
 
 [![Forked from](https://img.shields.io/badge/forked_from-upstream-blue.svg)](https://github.com/tryghostxyz/solfi-sim)
-
----
-
-## Origin & Attribution
-
-Forked from the original WSOL/USDC simulator by **tryghostxyz**:  
-Upstream: https://github.com/tryghostxyz/solfi-sim
-
-I extended it to support **arbitrary SolFi markets**.
 
 ---
 
@@ -129,3 +120,4 @@ PENGU/USDC
   --market-token-quote EBgjCinutbhu2JP83vm8yP3m51zxMLgkdUZBib78XmvL \
   --market-token-base  6tjb7iHPNANWSygn7jHkjJEa9AR4wa6pwnXzNNc66Xi8
 ```
+<img width="1800" height="1050" alt="image" src="https://github.com/user-attachments/assets/0e748602-a16b-49da-a21e-e37ed5a3d880" />
